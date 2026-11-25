@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: ci-native-inventree-acceptance
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    branch: infra/ci-native-acceptance-20261125
+    autoDeployTrigger: off
+    dockerfilePath: ./contrib/container/Dockerfile.ci-acceptance
+    dockerContext: .
+    healthCheckPath: /api/system/health/
+    disk:
+      name: ci-inventree-data
+      mountPath: /home/inventree/data
+      sizeGB: 5
+    envVars:
+      - key: INVENTREE_DB_ENGINE
+        value: postgresql
+      - key: INVENTREE_DB_HOST
+        fromDatabase:
+          name: ci-inventree-db
+          property: host
+      - key: INVENTREE_DB_PORT
+        fromDatabase:
+          name: ci-inventree-db
+          property: port
+      - key: INVENTREE_DB_USER
+        fromDatabase:
+          name: ci-inventree-db
+          property: user
+      - key: INVENTREE_DB_PASSWORD
+        fromDatabase:
+          name: ci-inventree-db
+          property: password
+      - key: INVENTREE_DB_NAME
+        fromDatabase:
+          name: ci-inventree-db
+          property: database
+      - key: CI_INVENTREE_REDIS_URL
+        fromService:
+          name: ci-inventree-cache
+          type: keyvalue
+          property: connectionString
+      - key: INVENTREE_CACHE_ENABLED
+        value: "True"
+      - key: INVENTREE_ADMIN_USER
+        value: ci_acceptance_admin
+      - key: INVENTREE_ADMIN_EMAIL
+        value: ci-acceptance@example.invalid
+      - key: INVENTREE_ADMIN_PASSWORD
+        generateValue: true
+      - key: INVENTREE_USE_X_FORWARDED_PROTO
+        value: "True"
+      - key: INVENTREE_PLUGINS_ENABLED
+        value: "False"
+      - key: INVENTREE_LOG_LEVEL
+        value: WARNING
+  - type: keyvalue
+    name: ci-inventree-cache
+    region: frankfurt
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+databases:
+  - name: ci-inventree-db
+    region: frankfurt
+    plan: basic_1gb
+    postgresMajorVersion: "17"
+    databaseName: ci_inventree
+    ipAllowList: []
